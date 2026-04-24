@@ -1,0 +1,5 @@
+mistune>=3.0
+pygments>=2.15
+requests>=2.28
+python-dotenv>=1.0  # optional, for auto-loading skill-local .env
+Pillow>=9.0        # optional, for image cropping in image-sourcing workflow

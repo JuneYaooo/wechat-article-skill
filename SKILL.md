@@ -88,11 +88,20 @@ description: Generate WeChat Official Account (公众号) long-form articles -- 
 
 ### 6.（可选）HTML 渲染
 
-本 skill 默认只产出 `.md` + `meta.json`。如果要渲染成带主题的 `.html`：
+公众号发布形式是 HTML，`wechat-publish` 也需要 HTML 输入。调 `scripts/md2html.py`（mistune + mdnice 主题，自包含）：
 
-- 推荐使用 [mdnice](https://editor.mdnice.com/) 主题（橙心 / 灵动蓝 / 简 / 兰青 / 红绯 / 萌粉 / 嫩青 / 重影 / 凝夜紫 / 山吹 / 蓝莹 / 科技蓝 / 雁栖湖 / 极简黑 / 极客黑 / 萌绿 / 绿意）
-- 自备 CLI 工具把 Markdown 转成自包含样式 HTML
-- 在 `meta.json.theme` 填入用的主题名
+```bash
+# 默认橙心主题
+python scripts/md2html.py output/公众号/.../article.md
+
+# 指定主题
+python scripts/md2html.py article.md --theme 灵动蓝 -o article_灵动蓝.html
+
+# 列出全部 28 个主题
+python scripts/md2html.py --list-themes
+```
+
+主题文件在 `assets/mdnice_themes/`：橙心（默认）/ 灵动蓝 / 简 / 兰青 / 红绯 / 萌粉 / 嫩青 / 重影 / 凝夜紫 / 山吹 / 蓝莹 / 科技蓝 / 雁栖湖 / 极简黑 / 极客黑 / 萌绿 / 绿意 等 28 个。把使用的主题名写入 `meta.json.theme`。
 
 ## 输出目录（见 `docs/output-spec.md`）
 
@@ -141,34 +150,42 @@ output/公众号/{YYYY-MM-DD}/{短标题}_{YYYYMMDDHHmm}/
 
 **完整流程见 [`resources/wechat-publish.md`](resources/wechat-publish.md)。**
 
+**一条命令**（脚本自动从环境变量 / `.env` / CLI 读凭证）：
+
+```bash
+python scripts/wechat_publish.py output/公众号/2026-04-24/xxx/
+```
+
+脚本内部：读 `meta.json` → 找 HTML（没有就用 `md2html.py` 现渲染）→ 拿 token → 传封面 → 正文图换成微信 CDN → 建草稿 → 打印 JSON `{media_id, thumb_media_id, ...}`。
+
 **凭证准备**（按优先级查找）：
 
-1. 环境变量 `WECHAT_APP_ID` / `WECHAT_APP_SECRET`
-2. skill 目录 `.env`：
+1. CLI `--appid` / `--secret`
+2. 环境变量 `WECHAT_APP_ID` / `WECHAT_APP_SECRET`
+3. skill 目录 `.env`：
    ```
    WECHAT_APP_ID=wx...
    WECHAT_APP_SECRET=...
    ```
-3. 用户在对话中直接提供
 
-**流程**：
-
-1. 从 `output/公众号/` 找到目标文章
-2. 读 `.md` + `meta.json`
-3. 获取 access token
-4. Markdown → HTML（用户自备渲染器）
-5. 上传封面图 → 得 `thumb_media_id`
-6. 上传正文图 → 把本地路径替换为微信 CDN URL
-7. 创建草稿 → 返回 `media_id`
-8. 告知用户到公众号后台→草稿箱手动发布
-
-**⚠️ 安全**：`WECHAT_APP_SECRET` 不要提交到 git，不要打印到日志。
+**⚠️ 安全**：`WECHAT_APP_SECRET` 不要提交到 git，不要打印到日志。脚本返回的 `media_id` 只是草稿 id，正式发布仍需用户到公众号后台手动点"发布"。
 
 ## search 模式：微信文章搜索
 
 **完整流程见 [`resources/wechat-search.md`](resources/wechat-search.md)。**
 
-基于搜狗的 HTML 接口，按关键词 + 可选日期范围搜微信文章。
+基于搜狗的 HTML 接口，按关键词 + 可选日期范围搜微信文章：
+
+```bash
+# 文章
+python scripts/sogou_search.py "AI 教育" --start 20260101 --end 20260401 --max 20
+
+# 公众号
+python scripts/sogou_search.py "人民日报" --mode gzh
+
+# 存结果
+python scripts/sogou_search.py "AI 教育" -o reference/search_results.json
+```
 
 **使用边界**：仅用于内容研究。不做大规模爬取、不绕过反爬、不模拟用户交互。
 
@@ -194,12 +211,21 @@ wechat-article-skill/
 │   ├── install.md              # 给 AI agent 自动安装读的指引
 │   ├── output-spec.md          # 目录与命名规范
 │   └── meta-schema.md          # meta.json 字段定义
-├── resources/
+├── resources/                  # AI 按需加载的参考文档
 │   ├── humanizer-zh.md         # 去 AI 化完整指南
 │   ├── reference-search.md     # 通用参考资料采集
-│   ├── image-sourcing.md       # 配图搜索 / 版权检查 / 水印处理
+│   ├── image-sourcing.md       # 配图搜索 / 版权检查 / AI 生图
 │   ├── wechat-publish.md       # 草稿箱上传完整流程
 │   └── wechat-search.md        # 搜狗微信文章搜索
+├── scripts/                    # 可执行脚本（AI shell 调用，不读入上下文）
+│   ├── README.md
+│   ├── requirements.txt
+│   ├── generate_image.py       # 文生图：gpt-image-2 → nano-banana → jimeng 回退
+│   ├── md2html.py              # Markdown → mdnice 主题 HTML
+│   ├── wechat_publish.py       # 上传文章到公众号草稿箱
+│   └── sogou_search.py         # 搜狗微信文章搜索
+├── assets/                     # 直接用进产物的资源
+│   └── mdnice_themes/          # 28 个 mdnice 主题模板
 └── agents/
     └── openclaw.yaml
 ```

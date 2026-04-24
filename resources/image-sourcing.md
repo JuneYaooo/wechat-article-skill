@@ -4,7 +4,14 @@
 
 ## 安全图源优先级（从低风险到高风险）
 
-1. **AI 生成**（用户自备 text-to-image 服务：Nano Banana、Gemini Image、Flux、SD 等）—— 零版权风险，概念图 / 装饰图首选
+1. **AI 生成** —— 零版权风险，概念图 / 装饰图首选。使用 `scripts/generate_image.py`，自动 provider 回退：
+   ```bash
+   python scripts/generate_image.py "a minimalist workspace, morning light" \
+       -o output/公众号/.../images/img_001.jpg --aspect 16:9
+   # 小红书竖图
+   python scripts/generate_image.py "..." -o card.jpg --aspect 3:4
+   ```
+   回退链：`gpt-image-2`（巨灵）→ `nano-banana-pro`（Gemini 3 Pro Image）→ `jimeng-4.0`。环境变量配置见 `.env.example`。
 2. **Unsplash**（`images.unsplash.com`）—— Unsplash License，免费商用，无需署名
 3. **Pexels**（`images.pexels.com`）—— 免费商用，无需署名
 4. **Pixabay**（`pixabay.com`）—— CC0，免费商用
@@ -77,12 +84,20 @@ print(f'裁剪完成：{w}x{h} → {w}x{h-40}')
 
 ### 方法二：AI 生图替换（水印无法去除时）
 
-调用用户自备的 text-to-image 服务，提示词写作要点：
+直接调 `scripts/generate_image.py`，自动回退到可用的 provider：
+
+```bash
+python scripts/generate_image.py \
+    "A minimalist workspace scene, clean desk, natural morning light, flat design" \
+    -o output/公众号/.../images/img_xxx.jpg --aspect 16:9
+```
+
+提示词写作要点：
 
 - 具体描述场景而非抽象概念
 - 加风格词：`minimalist`、`clean`、`professional`、`flat design`
 - 避免真实人脸（肖像权风险）
-- 小红书封面卡指定 `aspect_ratio="3:4"`（竖版）
+- 小红书封面卡指定 `--aspect 3:4`（竖版）
 
 ## 完整配图流程
 
