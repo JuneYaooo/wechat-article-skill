@@ -1,0 +1,17 @@
+interface:
+  display_name: "WeChat Official Account Article Writer"
+  short_description: "Generate WeChat Official Account (公众号) long-form articles (2000-4000 chars, 7 headline formulas, inline images, humanized), and optionally upload to the Official Account draft box. Saves to output/公众号/."
+  default_prompt: "帮我用 wechat-article 写一篇关于 [topic] 的公众号文章，大概 3000 字。"
+
+# Trust surface (what the user agrees to when installing this skill):
+#   - Reads scoped .env only (skill dir ~/.claude/skills/wechat-article-skill/.env);
+#     never walks parent project directories.
+#   - Uses Claude built-in tools: WebSearch, WebFetch, Bash, Read, Write, Edit.
+#   - Downloads images via curl to output/公众号/.../images/; http/https only.
+#   - Writes outputs to <cwd>/output/公众号/<date>/<slug>_<ts>/.
+#   - Optional outbound (only when user triggers publish mode):
+#       * api.weixin.qq.com endpoints (token, material, uploadimg, draft/add)
+#         authenticated with WECHAT_APP_ID / WECHAT_APP_SECRET from .env.
+#       * weixin.sogou.com public HTML search endpoint for reference gathering.
+#   - Final "publish to subscribers" step is NEVER automated -- always leaves
+#     article in the 草稿箱 for human final approval in the Official Account backend.
